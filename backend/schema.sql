@@ -32,25 +32,19 @@ create table if not exists public.webhook_events (
   created_at timestamptz not null default now()
 );
 
-create index if not exists entitlements_provider_customer_idx
-  on public.entitlements(provider_customer_id);
-
-create index if not exists daily_usage_date_idx
-  on public.daily_usage(usage_date);
+create index if not exists entitlements_provider_customer_idx on public.entitlements(provider_customer_id);
+create index if not exists daily_usage_date_idx on public.daily_usage(usage_date);
 
 alter table public.profiles enable row level security;
 alter table public.entitlements enable row level security;
 alter table public.daily_usage enable row level security;
 alter table public.webhook_events enable row level security;
 
-create policy if not exists "users can read own profile"
-  on public.profiles for select
-  using (auth.uid() = id);
+drop policy if exists "users can read own profile" on public.profiles;
+create policy "users can read own profile" on public.profiles for select using (auth.uid() = id);
 
-create policy if not exists "users can read own entitlement"
-  on public.entitlements for select
-  using (auth.uid() = user_id);
+drop policy if exists "users can read own entitlement" on public.entitlements;
+create policy "users can read own entitlement" on public.entitlements for select using (auth.uid() = user_id);
 
-create policy if not exists "users can read own usage"
-  on public.daily_usage for select
-  using (auth.uid() = user_id);
+drop policy if exists "users can read own usage" on public.daily_usage;
+create policy "users can read own usage" on public.daily_usage for select using (auth.uid() = user_id);
