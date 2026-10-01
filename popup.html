@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Auto-Translator</title>
+  <style>
+    body{width:290px;margin:0;padding:18px;font-family:Arial,sans-serif;background:#fff;color:#222}
+    .header{display:flex;align-items:flex-start;justify-content:space-between}
+    .title{font-size:17px;font-weight:600;margin-bottom:4px}
+    .subtitle{font-size:12px;color:#777;margin-bottom:16px}
+    .toggle{position:relative;width:42px;height:24px;margin-top:1px;flex-shrink:0}
+    .toggle input{opacity:0;width:0;height:0}
+    .slider{position:absolute;cursor:pointer;inset:0;background:#ccc;border-radius:24px;transition:.2s}
+    .slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .toggle input:checked + .slider{background:#222}
+    .toggle input:checked + .slider:before{transform:translateX(18px)}
+    label{display:block;font-size:13px;font-weight:600;margin-bottom:7px}
+    select{width:100%;box-sizing:border-box;padding:9px 10px;font-size:14px;border:1px solid #ccc;border-radius:7px;background:#fff;color:#222}
+    .usage{margin-top:12px;padding:9px 10px;background:#f6f7f8;border-radius:7px;font-size:12px;line-height:1.4}
+    .upgrade{display:block;width:100%;margin-top:10px;padding:9px;border:0;border-radius:7px;background:#222;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+    .saved{height:16px;margin-top:9px;font-size:12px;color:#16803c}
+    .hint{margin-top:10px;font-size:11px;color:#888;line-height:1.4}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="title">Auto-Translator</div>
+      <div class="subtitle">by UgurTash</div>
+    </div>
+    <label class="toggle" title="Enable or disable translation">
+      <input id="translationEnabled" type="checkbox" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <label for="targetLanguage">Translate to</label>
+  <select id="targetLanguage">
+    <option value="">Select a language</option>
+    <option value="tr">Turkish</option><option value="en">English</option><option value="fr">French</option>
+    <option value="de">German</option><option value="es">Spanish</option><option value="it">Italian</option>
+    <option value="ru">Russian</option><option value="pt">Portuguese</option><option value="nl">Dutch</option>
+    <option value="pl">Polish</option><option value="uk">Ukrainian</option><option value="ar">Arabic</option>
+    <option value="fa">Persian</option><option value="he">Hebrew</option><option value="hi">Hindi</option>
+    <option value="ja">Japanese</option><option value="ko">Korean</option><option value="zh-CN">Chinese</option>
+    <option value="sv">Swedish</option><option value="da">Danish</option><option value="no">Norwegian</option>
+    <option value="fi">Finnish</option><option value="cs">Czech</option><option value="el">Greek</option>
+    <option value="ro">Romanian</option><option value="hu">Hungarian</option><option value="id">Indonesian</option>
+    <option value="vi">Vietnamese</option><option value="th">Thai</option>
+  </select>
+
+  <div id="usage" class="usage">Today: loading...</div>
+  <button id="upgrade" class="upgrade" type="button">Unlock Unlimited — €3.99</button>
+  <div id="saved" class="saved"></div>
+  <div class="hint">Source language is detected automatically. Select text to translate. Free use is limited to 500 words per day.</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
