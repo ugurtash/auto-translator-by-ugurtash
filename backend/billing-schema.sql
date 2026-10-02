@@ -36,7 +36,7 @@ begin
   on conflict(subscription_id) do update set
     status=excluded.status,access_until=excluded.access_until,
     provider_updated_at=excluded.provider_updated_at,
-    revoked=public.billing_subscriptions.revoked or excluded.revoked,updated_at=now()
+    revoked=excluded.revoked,updated_at=now()
   where excluded.provider_updated_at>=public.billing_subscriptions.provider_updated_at;
 end;
 $$;

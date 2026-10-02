@@ -18,6 +18,7 @@ async function delivery(event='subscription_created',custom=true){
  const body={meta:{event_name:event,...(custom?{custom_data:{user_id:uid,user_signature:await hmac(bindingValue(uid,config),'test-secret')}}:{})},data:{id:'3',attributes:{subscription_id:3}}};
  const rawBody=JSON.stringify(body);return {method:'POST',rawBody,headers:{'x-signature':await hmac(rawBody,'test-secret')}};
 }
+const paidInvoice={subscription_id:3,store_id:1,test_mode:false,status:'paid',updated_at:'2026-10-02'};
 const attributes={store_id:1,variant_id:2,customer_id:4,test_mode:false,status:'active',renews_at:'2030-01-01',updated_at:'2026-10-02'};
 test('paid access ends on expiration and rejects paused, refunded and test-independent invalid state',()=>{
  for(const status of ['active','cancelled','on_trial']) assert.equal(subscriptionAccess({status,access_until:'2030-01-01'},Date.parse('2026-01-01')),true);
@@ -29,6 +30,7 @@ test('tampered webhook signature never calls upstream services',async t=>{
 test('latest provider state is used even for delayed created event',async t=>{
  let snapshot;
  t.mock.method(globalThis,'fetch',async(url,options)=>{
+ if(String(url).includes('subscription-invoices')) return Response.json({data:[{attributes:paidInvoice}]});
  if(String(url).includes('api.lemonsqueezy')) return Response.json({data:{attributes:{...attributes,status:'expired',ends_at:'2026-01-01'}}});
  if(String(url).includes('/rpc/')){snapshot=JSON.parse(options.body).snapshot;return new Response(null,{status:204})}
  return Response.json([]);
@@ -42,7 +44,7 @@ test('unsigned account binding is refused before writing',async t=>{
  t.mock.method(globalThis,'fetch',async url=>String(url).includes('api.lemonsqueezy')?Response.json({data:{attributes}}):Response.json([]));const output=res();await webhook(await delivery('subscription_created',false),output);assert.equal(output.code,400);
 });
 test('database failure returns retryable error instead of acknowledging payment',async t=>{
- t.mock.method(globalThis,'fetch',async url=>String(url).includes('api.lemonsqueezy')?Response.json({data:{attributes}}):String(url).includes('/rpc/')?Response.json({}, {status:500}):Response.json([]));const output=res();await webhook(await delivery(),output);assert.equal(output.code,503);
+ t.mock.method(globalThis,'fetch',async url=>String(url).includes('subscription-invoices')?Response.json({data:[{attributes:paidInvoice}]}):String(url).includes('api.lemonsqueezy')?Response.json({data:{attributes}}):String(url).includes('/rpc/')?Response.json({}, {status:500}):Response.json([]));const output=res();await webhook(await delivery(),output);assert.equal(output.code,503);
 });
 test('checkout binds confirmed account and cannot be redirected to another host',async t=>{
  let posted;
@@ -54,4 +56,19 @@ test('checkout binds confirmed account and cannot be redirected to another host'
 });
 test('unverified user cannot begin checkout',async t=>{
  let calls=0;t.mock.method(globalThis,'fetch',async()=>{calls++;return Response.json({id:uid,email:'customer@example.com'})});const output=res();await checkout({method:'POST',headers:{authorization:'Bearer test'}},output);assert.equal(output.code,401);assert.equal(calls,1);
+});
+
+test('old refund event does not revoke the newest paid renewal',async t=>{
+ let snapshot;t.mock.method(globalThis,'fetch',async(url,options)=>{
+ if(String(url).includes('subscription-invoices'))return Response.json({data:[{attributes:paidInvoice}]});
+ if(String(url).includes('api.lemonsqueezy'))return Response.json({data:{attributes}});
+ if(String(url).includes('/rpc/')){snapshot=JSON.parse(options.body).snapshot;return new Response(null,{status:204})}return Response.json([{user_id:uid}]);
+ });const req=await delivery('subscription_payment_refunded');const output=res();await webhook(req,output);assert.equal(output.code,200);assert.equal(snapshot.revoked,false);
+});
+test('latest fully refunded invoice revokes access despite active subscription',async t=>{
+ let snapshot;t.mock.method(globalThis,'fetch',async(url,options)=>{
+ if(String(url).includes('subscription-invoices'))return Response.json({data:[{attributes:{...paidInvoice,status:'refunded'}}]});
+ if(String(url).includes('api.lemonsqueezy'))return Response.json({data:{attributes}});
+ if(String(url).includes('/rpc/')){snapshot=JSON.parse(options.body).snapshot;return new Response(null,{status:204})}return Response.json([{user_id:uid}]);
+ });const output=res();await webhook(await delivery(),output);assert.equal(output.code,200);assert.equal(snapshot.revoked,true);
 });

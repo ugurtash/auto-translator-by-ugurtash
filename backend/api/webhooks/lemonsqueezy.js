@@ -27,9 +27,16 @@ export default async function handler(req, res) {
       if (!/^[0-9a-f-]{36}$/i.test(userId || '') || !constantEqual(payload.meta?.custom_data?.user_signature, await hmac(bindingValue(userId, config), config.secret))) throw new ApiError(400, 'UNBOUND_PURCHASE', 'Purchase is not linked to a verified account.');
     }
     const end = attributes.status === 'cancelled' || attributes.status === 'expired' ? attributes.ends_at : attributes.status === 'on_trial' ? attributes.trial_ends_at : attributes.renews_at;
-    const updated = attributes.updated_at;
-    if (!Number.isFinite(Date.parse(updated || ''))) throw new ApiError(400, 'INVALID_EVENT', 'Missing subscription timestamp.');
-    const refunded = event === 'subscription_payment_refunded' && payload.data?.attributes?.refunded === true && Number(payload.data.attributes.total) > 0 && Number(payload.data.attributes.refunded_amount) >= Number(payload.data.attributes.total);
+    // Reconcile the newest invoice too: a late refund of an old period must not
+    // revoke a newer paid renewal, and later payments can restore refunded access.
+    const invoices = await lemon('subscription-invoices?filter[subscription_id]=' + subscriptionId + '&sort=-createdAt&page[size]=1');
+    const invoice = invoices.data?.[0]?.attributes;
+    if (attributes.status !== 'on_trial' && (!invoice || String(invoice.subscription_id) !== String(subscriptionId) || invoice.test_mode !== config.test || String(invoice.store_id) !== config.store)) throw new ApiError(503, 'BILLING_PENDING', 'Payment confirmation pending.');
+    const subscriptionUpdated = Date.parse(attributes.updated_at || '');
+    const invoiceUpdated = Date.parse(invoice?.updated_at || '');
+    if (!Number.isFinite(subscriptionUpdated)) throw new ApiError(400, 'INVALID_EVENT', 'Missing subscription timestamp.');
+    const updated = new Date(Math.max(subscriptionUpdated, Number.isFinite(invoiceUpdated) ? invoiceUpdated : 0)).toISOString();
+    const refunded = attributes.status !== 'on_trial' && !['paid','partial_refund'].includes(invoice.status);
     const eventKey = await hmac(req.rawBody, config.secret);
     await database('rpc/apply_billing_subscription', { method: 'POST', body: { event_key: eventKey, snapshot: {
       subscription_id: String(subscriptionId), user_id: userId, customer_id: String(attributes.customer_id), store_id: config.store, variant_id: config.variant,
