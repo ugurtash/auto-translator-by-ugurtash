@@ -3,7 +3,7 @@ var ownerSessionEpoch = 0;
 var ownerStorageReady = chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
 function ownerBackendUrl() {
   var configured = globalThis.AUTO_TRANSLATOR_ACCOUNT.backendUrl;
-  if (!configured) throw new Error('Founder sign-in is not configured yet.');
+  if (!configured) throw new Error('Account sign-in is currently unavailable.');
   var url = new URL(configured);
   if (url.protocol !== 'https:') throw new Error('Account service must use HTTPS.');
   return configured.replace(/\/$/, "");
@@ -88,9 +88,12 @@ async function handleOwnerMessage(message) {
 }
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   if (!message || !message.type?.startsWith('owner-')) return;
-  // Account actions are only available to the extension popup, never website content scripts.
-  if (sender.id !== chrome.runtime.id || sender.url !== chrome.runtime.getURL('popup.html') || sender.tab) {
+  // Account actions are only available to trusted extension pages, never website content scripts.
+  if (sender.id !== chrome.runtime.id || ![chrome.runtime.getURL('popup.html'), chrome.runtime.getURL('account.html')].includes(sender.url)) {
     sendResponse({ ok: false, error: 'Account action not allowed.' }); return;
+  }
+  if (sender.url === chrome.runtime.getURL('popup.html') && message.type !== 'owner-status') {
+    sendResponse({ ok: false, error: 'Open account settings to sign in.' }); return;
   }
   handleOwnerMessage(message).then(sendResponse, function(error) { sendResponse({ ok: false, error: error.message, code: error.code }); });
   return true;

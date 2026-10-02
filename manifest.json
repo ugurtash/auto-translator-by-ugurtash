@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Auto-Translator by UgurTash",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Translate selected text instantly while browsing.",
   "permissions": [
     "storage"
@@ -40,5 +40,9 @@
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "options_ui": {
+    "page": "account.html",
+    "open_in_tab": true
   }
 }

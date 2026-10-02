@@ -18,3 +18,9 @@ Important: payment and server-side entitlement are not yet connected. The curren
 - Server validates founder identity on every unlimited translation; local premium flags no longer grant unlimited access.
 - Session storage is restricted to trusted extension contexts.
 - Free translation remains limited to 500 words per day per installation. Paid subscription integration remains incomplete.
+
+## 1.2.3 — Account settings
+
+- Removed the account form and all founder labels from the translation popup.
+- Moved account sign-in to the Chrome extension Options page.
+- Unlimited access is identified server-side and shown with a standard usage label.

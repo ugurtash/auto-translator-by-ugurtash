@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Account — Auto-Translator</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f6f7f9;color:#20242b;font:14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    main{max-width:440px;margin:64px auto;padding:32px;background:#fff;border:1px solid #e5e7eb;border-radius:16px}
+    .brand{color:#727985;font-size:12px;letter-spacing:.03em;margin:0 0 20px}h1{font-size:26px;letter-spacing:-.6px;margin:0 0 8px}.intro{margin:0 0 24px;color:#727985}
+    #accountStatus{margin-bottom:20px;font-size:13px;overflow-wrap:anywhere}label{display:block;font-size:13px;font-weight:600;margin:16px 0 6px}
+    input{width:100%;padding:11px 12px;border:1px solid #d4d8df;border-radius:8px;font:inherit}input:focus{outline:2px solid #b3c5df;outline-offset:2px}
+    .actions{display:flex;gap:10px;margin-top:24px}button{padding:10px 16px;border:1px solid #d4d8df;border-radius:8px;background:white;color:#20242b;font:inherit;cursor:pointer}
+    #accountLogin{background:#20242b;color:white;border-color:#20242b;flex:1}button:disabled{opacity:.5;cursor:wait}#accountMessage{margin-top:16px;color:#5c6470;font-size:13px;overflow-wrap:anywhere}
+    [hidden]{display:none!important}@media(max-width:480px){main{margin:20px 16px;padding:24px}}
+  </style>
+</head>
+<body>
+  <main class="account">
+    <p class="brand">AUTO-TRANSLATOR</p>
+    <h1>Account</h1>
+    <p class="intro">Manage your sign-in.</p>
+    <div id="accountStatus" role="status">Checking your account…</div>
+    <form id="accountForm" hidden>
+      <label for="accountEmail">Email</label>
+      <input id="accountEmail" type="email" autocomplete="email" required>
+      <label for="accountPassword">Password</label>
+      <input id="accountPassword" type="password" autocomplete="current-password" minlength="12" maxlength="128" required>
+      <div class="actions">
+        <button id="accountLogin" type="submit">Sign in</button>
+        <button id="accountRegister" type="button">Create account</button>
+      </div>
+    </form>
+    <button id="signOut" type="button" hidden>Sign out</button>
+    <div id="accountMessage" role="status"></div>
+  </main>
+  <script src="account-popup.js"></script>
+</body>
+</html>

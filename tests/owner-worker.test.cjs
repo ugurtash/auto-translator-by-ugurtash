@@ -18,6 +18,7 @@ function setup(initial = {}, responder = async () => { throw new Error('Unexpect
   }
   return { data, context, send };
 }
+const settings = { id: 'extension-id', url: 'chrome-extension://extension-id/account.html' };
 const popup = { id: 'extension-id', url: 'chrome-extension://extension-id/popup.html' };
 const content = { id: 'extension-id', url: 'https://example.org', tab: { id: 1 } };
 test('website content scripts cannot request founder authentication', async () => {
@@ -59,4 +60,12 @@ test('expired session refresh persists rotated tokens before translation', async
   });
   const result = await app.send({ type: 'translate', text: 'hello' }, content);
   assert.equal(result.ok, true); assert.equal(app.data.ownerSession.refresh_token, 'rotated'); assert.equal(calls, 2);
+});
+
+test('popup cannot start login; account settings can access account status', async () => {
+  const app = setup();
+  const blocked = await app.send({ type: 'owner-login' }, popup);
+  assert.equal(blocked.ok, false);
+  const status = await app.send({ type: 'owner-status' }, settings);
+  assert.equal(status.signedIn, false);
 });

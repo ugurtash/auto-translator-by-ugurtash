@@ -20,11 +20,6 @@
     .upgrade{display:block;width:100%;margin-top:10px;padding:9px;border:0;border-radius:7px;background:#222;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
     .saved{height:16px;margin-top:9px;font-size:12px;color:#16803c}
     .hint{margin-top:10px;font-size:11px;color:#888;line-height:1.4}
-    .account{margin-top:14px;border-top:1px solid #ddd;padding-top:12px;font-size:12px}
-    .account label{margin-top:10px}
-    .account input{width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:7px}
-    .account button{margin:8px 0;padding:8px;border:1px solid #ccc;border-radius:7px;background:#f6f7f8;cursor:pointer}
-    #accountMessage{line-height:1.4;overflow-wrap:anywhere}
   </style>
 </head>
 <body>
@@ -59,20 +54,6 @@
   <div id="saved" class="saved"></div>
   <div class="hint">Source language is detected automatically. Select text to translate. Free use is limited to 500 words per day.</div>
 
-  <section class="account" aria-label="Founder account">
-    <div id="accountStatus" role="status">Founder account: checking...</div>
-    <form id="accountForm" hidden>
-      <label for="accountEmail">Founder email</label>
-      <input id="accountEmail" type="email" autocomplete="email" required>
-      <label for="accountPassword">Password</label>
-      <input id="accountPassword" type="password" autocomplete="current-password" minlength="12" maxlength="128" required>
-      <button id="accountLogin" type="submit">Sign in</button>
-      <button id="accountRegister" type="button">Create founder account</button>
-    </form>
-    <button id="signOut" type="button" hidden>Sign out</button>
-    <div id="accountMessage" role="status"></div>
-  </section>
   <script src="popup.js"></script>
-  <script src="account-popup.js"></script>
 </body>
 </html>

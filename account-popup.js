@@ -7,16 +7,15 @@ document.addEventListener('DOMContentLoaded', function() {
   var password = document.getElementById('accountPassword');
   async function request(message) {
     var result = await chrome.runtime.sendMessage(message);
-    if (!result?.ok) throw new Error(result?.error || 'Account service unavailable.');
+    if (!result?.ok) throw new Error(result?.code === 'OWNER_REQUIRED' ? 'This account does not have access.' : result?.error || 'Account service unavailable.');
     return result;
   }
   async function refresh() {
     var account = await request({ type: 'owner-status' });
     form.hidden = !account.configured || account.signedIn;
     signOut.hidden = !account.signedIn;
-    status.textContent = account.signedIn ? account.email + ' — Founder: Unlimited' : account.configured ? 'Sign in to your founder account' : 'Founder sign-in is awaiting service setup.';
-    document.getElementById('upgrade').hidden = account.signedIn;
-    if (account.unlimited) document.getElementById('usage').textContent = 'Founder account: Unlimited';
+    status.textContent = account.signedIn ? account.email + ' — Unlimited' : account.configured ? 'Sign in to your account' : 'Account sign-in is currently unavailable.';
+
   }
   async function run(action) {
     var buttons = document.querySelectorAll('.account button');
@@ -43,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
   signOut.addEventListener('click', function() {
     run(async function() {
       try { await request({ type: 'owner-logout' }); }
-      finally { await refresh(); document.getElementById('usage').textContent = 'Free use: 500 words per day'; }
+      finally { await refresh(); }
     });
   });
   run(refresh);

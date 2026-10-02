@@ -14,7 +14,7 @@ The same handlers can be used in a Node/Vercel backend with `SUPABASE_URL`, `SUP
 
 ## First use / another computer
 
-Reload the unpacked extension in Chrome. Open its popup, enter the founder email and a password of at least 12 characters, and click **Create founder account**. Confirm the email using Supabase's link, then return to the popup and click **Sign in**. The project's Site URL points to `/owner-access/confirmed`, a minimal text response that asks the user to return to extension sign-in. It includes no scripts or tracking.
+Reload the unpacked extension in Chrome. Right-click the extension icon and choose Options. In the account settings page, enter the account email and a password of at least 12 characters, and click **Create account**. Confirm the email using Supabase's link, then return to account settings and click **Sign in**. The project's Site URL points to `/owner-access/confirmed`, a minimal text response that asks the user to return to extension sign-in. It includes no scripts or tracking.
 
 On another computer, install the updated extension and sign in to the same account. Refresh tokens persist in trusted extension storage only; content scripts cannot access them. The password is sent through HTTPS to Supabase Auth and is not saved by the extension. Sign-out removes local tokens and attempts to revoke the current refresh-token session; issued access tokens can remain valid until expiry.
 
@@ -22,4 +22,4 @@ Founder access removes the extension's daily word quota, not the upstream transl
 
 ## Verification
 
-`node --test backend/test/*.test.js` checks forged sessions, non-founder identities, unconfirmed accounts, registration, and translation over 500 words. `node --test tests/*.test.cjs` checks extension access boundaries and local flag bypasses. Live unauthenticated requests must return 401; other-account signup/login returns 403. End-to-end founder signup and translation require the user's private password and email confirmation, so the user completes these in Chrome.
+`node --test backend/test/*.test.js` checks forged sessions, non-founder identities, unconfirmed accounts, registration, and translation over 500 words. `node --test tests/*.test.cjs` checks extension access boundaries and local flag bypasses. Live unauthenticated requests must return 401; other-account signup/login returns 403. End-to-end founder signup and translation require the user's private password and email confirmation, so the user completes these in Chrome account settings.

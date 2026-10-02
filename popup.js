@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function() {
         return;
       }
       if (account && account.unlimited) {
-        usage.textContent = "Founder account: Unlimited";
+        usage.textContent = "Today: Unlimited";
         return;
       }
       chrome.storage.local.get(["usageDate", "dailyWords"], function(data) {
