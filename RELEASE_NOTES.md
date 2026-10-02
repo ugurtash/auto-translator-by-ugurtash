@@ -30,3 +30,11 @@ Important: payment and server-side entitlement are not yet connected. The curren
 - Added a discreet Sign in button at the bottom right of the translation popup.
 - The button opens the existing email/password account page and becomes Account after sign-in.
 - The upgrade button is hidden for verified unlimited access.
+
+## 1.2.5 — Account flow and translation recovery
+
+- Clear confirmation-email and password-reset notifications.
+- Forgot password flow with a secure recovery page.
+- Remember me persists session tokens only; unchecked sessions are kept in browser-session storage.
+- Successful sign-in returns to the previously active tab and reopens translation controls where supported.
+- Founder entitlement is checked on the server; translation uses the extension's original provider connection to avoid failures from the cloud proxy.

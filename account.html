@@ -12,6 +12,11 @@
     input{width:100%;padding:11px 12px;border:1px solid #d4d8df;border-radius:8px;font:inherit}input:focus{outline:2px solid #b3c5df;outline-offset:2px}
     .actions{display:flex;gap:10px;margin-top:24px}button{padding:10px 16px;border:1px solid #d4d8df;border-radius:8px;background:white;color:#20242b;font:inherit;cursor:pointer}
     #accountLogin{background:#20242b;color:white;border-color:#20242b;flex:1}button:disabled{opacity:.5;cursor:wait}#accountMessage{margin-top:16px;color:#5c6470;font-size:13px;overflow-wrap:anywhere}
+    #accountMessage:not(:empty){padding:12px;border-radius:8px;background:#eef7f0;color:#24613b;border:1px solid #cce4d3}
+    #accountMessage[data-kind="error"]{background:#fff1f0;color:#942b26;border-color:#f0cecb}
+    .remember{display:flex;align-items:center;gap:8px;font-weight:400}.remember input{width:auto}
+    .text-button{border:0;padding:6px 0;color:#596675;background:none;font-size:13px}
+    #continueButton{background:#20242b;color:#fff;margin-bottom:12px;width:100%}
     [hidden]{display:none!important}@media(max-width:480px){main{margin:20px 16px;padding:24px}}
   </style>
 </head>
@@ -26,12 +31,15 @@
       <input id="accountEmail" type="email" autocomplete="email" required>
       <label for="accountPassword">Password</label>
       <input id="accountPassword" type="password" autocomplete="current-password" minlength="12" maxlength="128" required>
+      <label class="remember"><input id="rememberMe" type="checkbox">Remember me</label>
+      <button id="forgotPassword" class="text-button" type="button">Forgot password?</button>
       <p class="intro" style="font-size:12px;margin-top:12px">New here? Create an account and confirm your email before signing in.</p>
       <div class="actions">
         <button id="accountLogin" type="submit">Sign in</button>
         <button id="accountRegister" type="button">Create account</button>
       </div>
     </form>
+    <button id="continueButton" type="button" hidden>Continue translating</button>
     <button id="signOut" type="button" hidden>Sign out</button>
     <div id="accountMessage" role="status"></div>
   </main>

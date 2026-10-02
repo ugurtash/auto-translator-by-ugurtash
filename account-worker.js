@@ -1,6 +1,13 @@
 var ownerRefreshPromise = null;
 var ownerSessionEpoch = 0;
-var ownerStorageReady = chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
+var ownerStorageReady = Promise.all([chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' }), chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' })]);
+async function storedOwnerSession() {
+  var transient = await chrome.storage.session.get('ownerSession');
+  if (transient.ownerSession) return { session: transient.ownerSession, storage: chrome.storage.session };
+  var persistent = await chrome.storage.local.get('ownerSession');
+  return { session: persistent.ownerSession, storage: chrome.storage.local };
+}
+async function clearOwnerSession() { await Promise.all([chrome.storage.local.remove('ownerSession'), chrome.storage.session.remove('ownerSession')]); }
 function ownerBackendUrl() {
   var configured = globalThis.AUTO_TRANSLATOR_ACCOUNT.backendUrl;
   if (!configured) throw new Error('Account sign-in is currently unavailable.');
@@ -24,8 +31,8 @@ async function ownerFetch(path, body, token) {
 }
 async function ownerSession() {
   await ownerStorageReady;
-  var data = await chrome.storage.local.get('ownerSession');
-  var session = data.ownerSession;
+  var stored = await storedOwnerSession();
+  var session = stored.session;
   if (!session) return null;
   if (session.expires_at > Date.now() / 1000 + 60) return session;
   if (!ownerRefreshPromise) {
@@ -34,10 +41,10 @@ async function ownerSession() {
       try {
         var result = await ownerFetch('auth', { action: 'refresh', refresh_token: session.refresh_token });
         if (epoch !== ownerSessionEpoch) throw new Error('Account changed. Please sign in again.');
-        await chrome.storage.local.set({ ownerSession: result.session });
+        await stored.storage.set({ ownerSession: result.session });
         return result.session;
       } catch (error) {
-        if (epoch === ownerSessionEpoch && ['AUTH_REQUIRED', 'OWNER_REQUIRED'].includes(error.code)) await chrome.storage.local.remove('ownerSession');
+        if (epoch === ownerSessionEpoch && ['AUTH_REQUIRED', 'OWNER_REQUIRED'].includes(error.code)) await clearOwnerSession();
         throw error;
       } finally { ownerRefreshPromise = null; }
     })();
@@ -53,7 +60,7 @@ async function ownerAccountStatus() {
   catch (error) {
     if (['AUTH_REQUIRED', 'OWNER_REQUIRED'].includes(error.code)) {
       ++ownerSessionEpoch;
-      await chrome.storage.local.remove('ownerSession');
+      await clearOwnerSession();
       return { ok: true, configured: true, signedIn: false };
     }
     throw error;
@@ -64,7 +71,10 @@ async function ownerTranslate(text, targetLanguage) {
   var session = await ownerSession();
   if (!session) return null;
   // The server checks owner access for every translation; local flags grant nothing.
-  return ownerFetch('translate', { text, targetLanguage }, session.access_token);
+  var account = await ownerFetch('account', null, session.access_token);
+  if (!account.unlimited) throw new Error('Unlimited access is not available for this account.');
+  var result = await translateText(text, targetLanguage);
+  return { ok: true, ...result, targetLanguage, premium: true, plan: account.plan, limit: null };
 }
 async function handleOwnerMessage(message) {
   if (message.type === 'owner-status') return ownerAccountStatus();
@@ -74,13 +84,29 @@ async function handleOwnerMessage(message) {
     if (epoch !== ownerSessionEpoch) throw new Error('Account changed. Please try again.');
     if (result.confirmEmail) return result;
     await ownerStorageReady;
-    await chrome.storage.local.set({ ownerSession: result.session });
+    await clearOwnerSession();
+    await (message.remember ? chrome.storage.local : chrome.storage.session).set({ ownerSession: result.session });
     return ownerAccountStatus();
   }
+  if (message.type === 'owner-forgot-password') return ownerFetch('auth', { action: 'forgot-password', email: message.email });
+  if (message.type === 'owner-return-to-page') {
+    var data = await chrome.storage.session.get('accountReturnPage');
+    if (data.accountReturnPage) {
+      try {
+        await chrome.tabs.update(data.accountReturnPage.tabId, { active: true });
+        await chrome.windows.update(data.accountReturnPage.windowId, { focused: true });
+      } catch { /* The original tab may have been closed. The account page remains usable. */ }
+    }
+    if (chrome.action.openPopup) {
+      try { await chrome.action.openPopup(); } catch { /* Older Chrome versions can reject programmatic popup opening. */ }
+    }
+    return { ok: true };
+  }
   if (message.type === 'owner-logout') {
-    var data = await chrome.storage.local.get('ownerSession');
+    var stored = await storedOwnerSession();
+    var data = { ownerSession: stored.session };
     ++ownerSessionEpoch;
-    await chrome.storage.local.remove('ownerSession');
+    await clearOwnerSession();
     if (data.ownerSession) await ownerFetch('auth', { action: 'logout' }, data.ownerSession.access_token);
     return { ok: true };
   }

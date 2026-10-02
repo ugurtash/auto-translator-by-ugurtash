@@ -67,3 +67,19 @@ test('confirmed founder email is accepted before ID pinning, not unverified clie
   assert.equal((await requireOwner(request)).id, verified.id);
   process.env.OWNER_USER_ID = 'founder-id';
 });
+
+test('forgot-password does not reveal whether an unrelated address exists', async t => {
+  let calls = 0;
+  t.mock.method(globalThis,'fetch',async()=>{calls++;return Response.json({});});
+  const output=res();
+  await auth({method:'POST',body:{action:'forgot-password',email:'other@example.com'}},output);
+  assert.equal(output.code,200);assert.equal(output.body.emailSent,true);assert.equal(calls,0);
+});
+test('reset-password rejects unauthenticated requests before updating any password',async()=>{
+ const output=res();await auth({method:'POST',headers:{},body:{action:'reset-password',password:'example-password'}},output);assert.equal(output.code,401);
+});
+test('reset-password validates identity and updates the password using the user token',async t=>{
+ const paths=[];
+ t.mock.method(globalThis,'fetch',async(url,options)=>{paths.push(String(url));assert.equal(options.headers.Authorization,'Bearer verified-token');return Response.json(String(url).endsWith('/user')&&options.method==='GET'?verified:{});});
+ const output=res();await auth({...request,method:'POST',body:{action:'reset-password',password:'example-password'}},output);assert.equal(output.code,200);assert.equal(paths.length,3);
+});

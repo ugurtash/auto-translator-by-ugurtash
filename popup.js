@@ -5,8 +5,13 @@ document.addEventListener("DOMContentLoaded", function() {
   var translationEnabled = document.getElementById("translationEnabled");
   var accountButton = document.getElementById("accountButton");
   accountButton.addEventListener("click", function() {
-    chrome.runtime.openOptionsPage(function() {
-      if (chrome.runtime.lastError && saved) saved.textContent = "Could not open account settings. Please try again.";
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      var page = tabs[0];
+      chrome.storage.session.set({ accountReturnPage: page ? { tabId: page.id, windowId: page.windowId } : null }, function() {
+        chrome.runtime.openOptionsPage(function() {
+          if (chrome.runtime.lastError && saved) saved.textContent = "Could not open account settings. Please try again.";
+        });
+      });
     });
   });
 
