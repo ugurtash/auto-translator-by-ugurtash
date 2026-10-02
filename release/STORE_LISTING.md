@@ -21,12 +21,12 @@ Remote code: No. All executable extension JavaScript ships in the package; remot
 
 Data disclosures to review in the dashboard: personally identifiable information (account email), authentication information (password submission/session tokens), website content (selected text), and subscription/transaction information. Card details stay with Lemon Squeezy. No sale of user data, advertising profiling, or browsing-history collection.
 
-Privacy URL after the revised policy deploys:
+Privacy URL (verified live):
 https://ugurtash.github.io/auto-translator-by-ugurtash/privacy.html
 
 Contact: ugurtash11@gmail.com
 
-Before submission: attach actual product screenshots, confirm the final package version, verify the revised privacy page is live, complete the normal-user test purchase and access recovery, and review the listing/disclosures in the store dashboard. Replace the landing-page Coming soon label with the real listing URL after publication.
+Before submission: attach actual product screenshots and review the listing/disclosures in the store dashboard. Package version: 1.2.7. Privacy page, normal-user test purchase/account binding, independent sign-in and session refresh have passed. Live product remains Draft and must be published at the approved launch. Replace the landing-page Coming soon label with the real listing URL after publication.
 
 Official guidance:
 https://developer.chrome.com/docs/webstore/cws-dashboard-privacy/

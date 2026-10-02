@@ -44,10 +44,11 @@ Important: payment and server-side entitlement are not yet connected. The curren
 - After successful sign-in, return to the original tab and close only the extension account tab.
 - Keep account settings open if the original tab has been closed.
 
-## Account and billing release candidate (unreleased)
+## 1.2.7 — Customer accounts and subscription billing
 - General verified customer accounts; founder access pinned privately to the Auth user ID.
 - Signed checkout binds subscriptions to the account across computers, even when billing contact email differs.
 - Raw-body HMAC verification, service-only atomic billing updates, provider-state reconciliation and isolated test billing.
 - Signed-in free accounts retain the original free translation path. Correct plan labels and local usage date display.
 - Checkout opens from account settings; access can be refreshed after purchase. Updated privacy description.
-- Release remains blocked on live product configuration, custom SMTP delivery and end-to-end payment validation.
+- Verified SMTP email delivery, normal customer confirmation/login, session refresh and a successful test purchase linked through the signed webhook. Test purchases do not grant production access.
+- 40 automated checks pass. Live billing is configured; the live product remains Draft until launch. Chrome Web Store screenshots and dashboard review remain before submission.
