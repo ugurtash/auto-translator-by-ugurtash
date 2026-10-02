@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", function() {
         return;
       }
       chrome.storage.local.get(["usageDate", "dailyWords"], function(data) {
-        var words = data.usageDate === today ? Number(data.dailyWords || 0) : 0;
+        var words = data.usageDate === getToday() ? Number(data.dailyWords || 0) : 0;
         usage.textContent = "Today: " + words + " / 500 words";
       });
     });
@@ -109,13 +109,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 document.addEventListener("DOMContentLoaded", function() {
-  var upgradeButton = document.getElementById("upgrade");
-
-  if (!upgradeButton) {
-    return;
-  }
-
-  upgradeButton.addEventListener("click", function() {
-    window.open("https://auto-translator-by-ugurtash.lemonsqueezy.com/checkout/buy/2269476f-19bf-4668-9afb-135b2aaa285b", "_blank");
+  document.getElementById("upgrade").addEventListener("click", function() {
+    document.getElementById("accountButton").click();
   });
 });

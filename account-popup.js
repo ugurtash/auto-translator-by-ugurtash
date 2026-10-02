@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
   var continueButton = document.getElementById('continueButton');
   var remember = document.getElementById('rememberMe');
   var password = document.getElementById('accountPassword');
+  var subscribe = document.getElementById('subscribeButton');
+  var refreshAccess = document.getElementById('refreshAccess');
+  var billingAvailable = false;
   async function request(message) {
     var result = await chrome.runtime.sendMessage(message);
     if (!result?.ok) throw new Error(result?.code === 'OWNER_REQUIRED' ? 'This account does not have access.' : result?.error || 'Account service unavailable.');
@@ -21,7 +24,11 @@ document.addEventListener('DOMContentLoaded', function() {
     form.hidden = !account.configured || account.signedIn;
     signOut.hidden = !account.signedIn;
     continueButton.hidden = !account.signedIn;
-    status.textContent = account.signedIn ? account.email + ' — Unlimited' : account.configured ? 'Sign in to your account' : 'Account sign-in is currently unavailable.';
+    subscribe.hidden = !account.signedIn || account.unlimited;
+    billingAvailable = !!account.billingAvailable;
+    subscribe.disabled = !billingAvailable;
+    refreshAccess.hidden = !account.signedIn;
+    status.textContent = account.signedIn ? account.email + (account.unlimited ? ' — Unlimited' : ' — Free') : account.configured ? 'Sign in to your account' : 'Account sign-in is currently unavailable.';
 
   }
   async function run(action) {
@@ -30,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
     notice.dataset.kind = 'success';
     notice.textContent = 'Please wait…';
     try { await action(); } catch (error) { notice.dataset.kind = 'error'; notice.textContent = error.message; }
-    finally { buttons.forEach(button => { button.disabled = false; }); }
+    finally { buttons.forEach(button => { button.disabled = false; }); subscribe.disabled = !billingAvailable; }
   }
   async function authenticate(type) {
     if (!form.reportValidity()) return;
@@ -54,6 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
       notice.textContent = 'If this email has an account, a password reset link has been sent. Check your inbox and spam folder.';
     });
   });
+  subscribe.addEventListener('click', function() { run(async function() { await request({ type: 'owner-checkout' }); notice.textContent = 'Complete checkout in the new tab, then refresh your access here.'; }); });
+  refreshAccess.addEventListener('click', function() { run(async function() { await refresh(); notice.textContent = 'Account access refreshed.'; }); });
   continueButton.addEventListener('click', function() { run(async function() { await returnToTranslation(); notice.textContent = 'Open Auto-Translator from the toolbar to continue.'; }); });
   document.getElementById('accountRegister').addEventListener('click', function() { authenticate('owner-register'); });
   form.addEventListener('submit', function(event) { event.preventDefault(); authenticate('owner-login'); });

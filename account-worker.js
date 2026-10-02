@@ -65,19 +65,28 @@ async function ownerAccountStatus() {
     }
     throw error;
   }
-  return { ok: true, configured: true, signedIn: true, email: result.email, plan: result.plan, unlimited: result.unlimited };
+  return { ok: true, configured: true, signedIn: true, email: result.email, plan: result.plan, unlimited: result.unlimited, billingAvailable: result.billingAvailable };
 }
 async function ownerTranslate(text, targetLanguage) {
   var session = await ownerSession();
   if (!session) return null;
-  // The server checks owner access for every translation; local flags grant nothing.
+  // The server checks paid or owner access for every translation; local flags grant nothing.
   var account = await ownerFetch('account', null, session.access_token);
-  if (!account.unlimited) throw new Error('Unlimited access is not available for this account.');
+  if (!account.unlimited) return null;
   var result = await translateText(text, targetLanguage);
   return { ok: true, ...result, targetLanguage, premium: true, plan: account.plan, limit: null };
 }
 async function handleOwnerMessage(message, sender) {
   if (message.type === 'owner-status') return ownerAccountStatus();
+  if (message.type === 'owner-checkout') {
+    var session = await ownerSession();
+    if (!session) throw new Error('Sign in before subscribing.');
+    var checkout = await ownerFetch('checkout', {}, session.access_token);
+    var url = new URL(checkout.url);
+    if (url.protocol !== 'https:' || !(url.hostname === 'lemonsqueezy.com' || url.hostname.endsWith('.lemonsqueezy.com'))) throw new Error('Invalid checkout URL.');
+    await chrome.tabs.create({ url: url.href });
+    return { ok: true };
+  }
   if (message.type === 'owner-login' || message.type === 'owner-register') {
     var epoch = ++ownerSessionEpoch;
     var result = await ownerFetch('auth', { action: message.type === 'owner-login' ? 'login' : 'register', email: message.email, password: message.password });

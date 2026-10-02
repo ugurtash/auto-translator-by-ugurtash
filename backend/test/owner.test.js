@@ -19,7 +19,7 @@ test('server validates session; user metadata cannot grant ownership', async t =
 });
 test('unconfirmed founder email is refused', async t => {
   t.mock.method(globalThis, 'fetch', async () => Response.json({ ...verified, email_confirmed_at: null }));
-  await assert.rejects(requireOwner(request), e => e.status === 403);
+  await assert.rejects(requireOwner(request), e => e.status === 401);
 });
 test('forged token rejected by Auth server', async t => {
   t.mock.method(globalThis, 'fetch', async () => Response.json({}, { status: 401 }));
@@ -42,18 +42,18 @@ test('non-owner never reaches translation provider', async t => {
   await translate({ ...request, method: 'POST', body: { text: 'hello', targetLanguage: 'tr' } }, output);
   assert.equal(output.code, 403); assert.equal(calls, 1);
 });
-test('registration cannot create arbitrary accounts', async t => {
+test('customer registration waits for email confirmation', async t => {
   let calls = 0;
   t.mock.method(globalThis, 'fetch', async () => { calls++; return Response.json({}); });
   const output = res();
-  await auth({ method: 'POST', body: { action: 'register', email: 'other@example.com' } }, output);
-  assert.equal(output.code, 403); assert.equal(calls, 0);
+  await auth({ method: 'POST', body: { action: 'register', email: 'other@example.com', password: 'example-password-only' } }, output);
+  assert.equal(output.code, 200); assert.equal(output.body.confirmEmail, true); assert.equal(calls, 1);
 });
-test('founder login still validates returned identity', async t => {
+test('customer login accepts verified identity without granting ownership', async t => {
   t.mock.method(globalThis, 'fetch', async url => String(url).includes('grant_type=password') ? Response.json({ access_token: 'token', refresh_token: 'refresh', expires_in: 3600 }) : Response.json({ ...verified, id: 'other' }));
   const output = res();
   await auth({ method: 'POST', body: { action: 'login', email: verified.email, password: 'example-password-only' } }, output);
-  assert.equal(output.code, 403); assert.equal(output.body.session, undefined);
+  assert.equal(output.code, 200); assert.equal(output.body.plan, undefined);
 });
 test('registration waits for confirmation and never grants an unverified session', async t => {
   t.mock.method(globalThis, 'fetch', async () => Response.json({ user: { id: 'founder-id' } }));
@@ -73,7 +73,7 @@ test('forgot-password does not reveal whether an unrelated address exists', asyn
   t.mock.method(globalThis,'fetch',async()=>{calls++;return Response.json({});});
   const output=res();
   await auth({method:'POST',body:{action:'forgot-password',email:'other@example.com'}},output);
-  assert.equal(output.code,200);assert.equal(output.body.emailSent,true);assert.equal(calls,0);
+  assert.equal(output.code,200);assert.equal(output.body.emailSent,true);assert.equal(calls,1);
 });
 test('reset-password rejects unauthenticated requests before updating any password',async()=>{
  const output=res();await auth({method:'POST',headers:{},body:{action:'reset-password',password:'example-password'}},output);assert.equal(output.code,401);

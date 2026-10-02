@@ -100,3 +100,15 @@ test('missing original tab keeps the account tab open',async()=>{
  app.context.chrome.action={};
  await app.send({type:'owner-return-to-page',accountTabId:2},settings);assert.equal(closed,false);
 });
+
+test('signed-in free account continues translating under the free quota',async()=>{
+ const app=setup({targetLanguage:'tr',ownerSession:{access_token:'private',expires_at:Date.now()/1000+3600}},async url=>String(url).endsWith('/account')?Response.json({ok:true,unlimited:false,plan:'free'}):Response.json([[['merhaba','hello']],null,'en']));
+ const result=await app.send({type:'translate',text:'hello'},content);assert.equal(result.ok,true);assert.equal(result.premium,false);assert.equal(app.data.dailyWords,1);
+});
+test('paid entitlement permits translation beyond the local quota',async()=>{
+ const app=setup({targetLanguage:'tr',dailyWords:500,ownerSession:{access_token:'private',expires_at:Date.now()/1000+3600}},async url=>String(url).endsWith('/account')?Response.json({ok:true,unlimited:true,plan:'premium'}):Response.json([[['merhaba','hello']],null,'en']));
+ const result=await app.send({type:'translate',text:'hello'},content);assert.equal(result.ok,true);assert.equal(result.plan,'premium');assert.equal(app.data.dailyWords,500);
+});
+test('website cannot initiate a checkout or read its account binding',async()=>{
+ const app=setup();const result=await app.send({type:'owner-checkout'},content);assert.equal(result.ok,false);
+});

@@ -1,17 +1,18 @@
-import { OWNER_EMAIL } from './deployment-config.js';
+import { OWNER_EMAIL, OWNER_USER_ID } from './deployment-config.js';
 export class ApiError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
 }
 export function configuration() {
   const env = globalThis.Deno ? { SUPABASE_URL: Deno.env.get('SUPABASE_URL'), SUPABASE_PUBLISHABLE_KEY: Deno.env.get('SUPABASE_ANON_KEY'), OWNER_USER_ID: Deno.env.get('OWNER_USER_ID'), OWNER_EMAIL: Deno.env.get('OWNER_EMAIL') } : process.env;
-  const { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, OWNER_USER_ID } = env;
+  const { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } = env;
+  const ownerId = env.OWNER_USER_ID || OWNER_USER_ID;
   const ownerEmail = env.OWNER_EMAIL || OWNER_EMAIL;
-  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY || (!OWNER_USER_ID && !ownerEmail)) {
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY || (!ownerId && !ownerEmail)) {
     throw new ApiError(503, 'NOT_CONFIGURED', 'Account service is not configured yet.');
   }
   const url = new URL(SUPABASE_URL);
   if (url.protocol !== 'https:') throw new ApiError(503, 'NOT_CONFIGURED', 'Account service is not configured yet.');
-  return { url: url.origin, key: SUPABASE_PUBLISHABLE_KEY, ownerId: OWNER_USER_ID, ownerEmail };
+  return { url: url.origin, key: SUPABASE_PUBLISHABLE_KEY, ownerId, ownerEmail };
 }
 export async function authRequest(path, { method = 'GET', body, token } = {}) {
   const config = configuration();
@@ -27,15 +28,20 @@ export async function authRequest(path, { method = 'GET', body, token } = {}) {
   }
   return data;
 }
-export async function requireOwner(req) {
-  const config = configuration();
+export async function requireUser(req) {
   const match = /^Bearer ([^\s]+)$/i.exec(req.headers?.authorization || '');
-  if (!match) throw new ApiError(401, 'AUTH_REQUIRED', 'Sign in to your founder account.');
-  // Validate against the Auth server; never trust decoded JWTs, email input or user_metadata.
+  if (!match) throw new ApiError(401, 'AUTH_REQUIRED', 'Sign in to your account.');
   const user = await authRequest('user', { token: match[1] });
-  if (!user.id || !user.email_confirmed_at || user.is_anonymous || (config.ownerId ? user.id !== config.ownerId : user.email?.toLowerCase() !== config.ownerEmail.toLowerCase())) {
-    throw new ApiError(403, 'OWNER_REQUIRED', 'This account does not have founder access.');
-  }
+  if (!user.id || !user.email || !user.email_confirmed_at || user.is_anonymous) throw new ApiError(401, 'AUTH_REQUIRED', 'Confirm your email and sign in again.');
+  return user;
+}
+export function isOwner(user) {
+  const config = configuration();
+  return config.ownerId ? user.id === config.ownerId : user.email.toLowerCase() === config.ownerEmail.toLowerCase();
+}
+export async function requireOwner(req) {
+  const user = await requireUser(req);
+  if (!isOwner(user)) throw new ApiError(403, 'OWNER_REQUIRED', 'This account does not have access.');
   return user;
 }
 export function prepare(res) { res.setHeader('Cache-Control', 'no-store'); }

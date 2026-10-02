@@ -1,25 +1,27 @@
-# Auto-Translator founder access
+# Auto-Translator account and billing
 
-The Chrome extension keeps the existing free translation path (500 words/day per Chrome installation). Founder entitlement is verified through the `owner-access` Supabase Edge Function before the extension translates using its original Google connection. The cloud translation proxy is retained for future provider integration but is not used by the extension. Every founder request validates the access token using Supabase Auth's `/user` endpoint, requires a confirmed email, and checks the server's founder identity. Client `premium` flags and user-editable metadata cannot grant founder access.
-
-This change implements founder access only. Commercial entitlement synchronization and server-enforced quotas for all free/paid users are still separate work; the Lemon Squeezy webhook scaffold is not a completed subscription system.
+The extension preserves its original direct Google translation connection. Anonymous and signed-in free users have a local 500-word daily quota. A validated, confirmed Supabase account receives unlimited extension usage only when its immutable ID matches the private founder ID or a live subscription has current access. Test subscriptions never grant production Premium access. Provider throttling and the 12,000-character request limit still apply.
 
 ## Deployment
 
-The production function is `owner-access` in the Auto-Translator Supabase project. Entry point: `backend/edge/index.ts`. Bundle the relative `api` and `lib` modules. Gateway JWT verification is disabled because the public signup/login routes must accept unauthenticated users; the account and translation handlers perform their own verification against Supabase Auth for every request.
+Deploy `backend/edge/index.ts` and its relative dependencies as `owner-access`. Public auth routes validate signup/login through Supabase Auth. Account and checkout routes verify the user through Auth before reading billing data; webhook verifies HMAC SHA-256 over the exact raw body. The gateway JWT check is disabled because public login and signed webhooks implement separate verification.
 
-Supabase automatically supplies `SUPABASE_URL` and `SUPABASE_ANON_KEY` to the function. Supply `OWNER_EMAIL` privately (or inject it into `backend/lib/deployment-config.js` in the deployment bundle only). After first signup, optionally pin `OWNER_USER_ID` to the authenticated user's immutable UUID. Email fallback accepts only the server-configured address confirmed by Supabase, never the email provided in a translation request. Never commit the private identity config or secret keys.
+Apply `schema.sql`, then `billing-schema.sql`. Billing tables use RLS; clients can read only their own subscription and cannot write it. Only the service role can run the atomic, idempotent subscription update. Delayed webhook events fetch the provider's current state. A cancelled subscription remains accessible until its paid period ends. Paused, expired, unpaid and fully refunded subscriptions do not grant access.
 
-The same handlers can be used in a Node/Vercel backend with `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `OWNER_EMAIL`, and optionally `OWNER_USER_ID`. Update the extension endpoint and host permission together if changing hosting.
+Default Supabase function secrets provide Auth and service-role credentials. Privately configure `OWNER_USER_ID` or inject it into deployment-config.js in the upload bundle only. Never commit founder identity or secret keys. Live billing requires `LEMON_SQUEEZY_API_KEY`, `LEMON_SQUEEZY_WEBHOOK_SECRET`, `LEMON_SQUEEZY_STORE_ID`, `LEMON_SQUEEZY_VARIANT_ID`. The variant must be the verified €3.99 monthly live product.
 
-## First use / another computer
+The isolated `owner-access-test` bundle sets `BILLING_TEST_MODE=true` in its private deployment-config.js and uses `LEMON_SQUEEZY_TEST_*` settings. Do not switch the production extension URL to the test function. Test checkout purchases use provider test cards only. API keys and webhook secrets stay in encrypted server settings; they are absent from the Chrome package.
 
-Reload the unpacked extension in Chrome. Right-click the extension icon and choose Options. In the account settings page, enter the account email and a password of at least 12 characters, and click **Create account**. Confirm the email using Supabase's link, then return to account settings and click **Sign in**. The project Site URL points to the GitHub Pages `auth-complete.html` callback. It removes credential fragments immediately, validates the account before displaying confirmation or a password reset form, keeps the access token only in memory, and uses no third-party scripts or analytics.
+Webhook endpoint: `https://cxxbcamghmyttgqikfak.supabase.co/functions/v1/owner-access/webhook`. Subscribe to subscription lifecycle and payment success/failure/recovery/refund events. Use the corresponding `owner-access-test/webhook` endpoint for test mode.
 
-On another computer, install the updated extension and sign in to the same account. With Remember me selected, refresh tokens persist in trusted local extension storage. Otherwise they are kept only in browser-session storage; content scripts cannot access them. The password is sent through HTTPS to Supabase Auth and is not saved by the extension. Sign-out removes local tokens and attempts to revoke the current refresh-token session; issued access tokens can remain valid until expiry.
+## User flow
 
-Founder access removes the extension's daily word quota, not the upstream translation service's limits. Translation currently uses the same Google endpoint as the prior release; per-request text is limited to 12,000 characters and requests time out. No provider availability or unlimited commercial API entitlement is implied.
+Select Sign in from the language/settings popup. Create an account, confirm the email, then sign in. The account page shows Free or Unlimited accurately. Subscribe from the signed-in account: the server creates checkout with a signed user ID, regardless of a differing payment contact email. After payment, Refresh access reads server billing state. On another computer, install the published extension and sign in to the same account.
 
-## Verification
+Remember me persists rotating tokens in trusted extension storage. Otherwise tokens last for the browser session. Passwords are not saved. Sign-out removes local tokens and requests session revocation. Login returns to the user's prior tab and closes only the verified account tab. Recovery and email confirmation use the first-party GitHub Pages callback, strip token fragments immediately and verify the session before showing a password form.
 
-`node --test backend/test/*.test.js` checks forged sessions, non-founder identities, unconfirmed accounts, registration, and translation over 500 words. `node --test tests/*.test.cjs` checks extension access boundaries and local flag bypasses. Live unauthenticated requests must return 401; other-account signup/login returns 403. End-to-end founder signup and translation require the user's private password and email confirmation, so the user completes these in Chrome account settings.
+## Release gates
+
+The Chrome Store upload remains blocked until live product/key/webhook configuration, custom SMTP with real delivery checks, and a successful test checkout with lifecycle checks are completed. Do not describe the package as ready solely because automated tests pass. Free quotas are local and can reset on reinstall; there is no claim of server-enforced free usage across devices.
+
+Run `node --test backend/test/*.test.js tests/*.test.cjs`. Validate production unauthorized access returns 401, forged webhooks return 401, and production excludes test entitlements. Complete confirmation, recovery and payment tests without exposing private credentials in logs or chat.
