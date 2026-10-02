@@ -11,7 +11,7 @@ function setup(initial = {}, responder = async () => { throw new Error('Unexpect
     set(values, cb) { Object.assign(data, values); if (cb) cb(); else return Promise.resolve(); },
     remove: async keys => { for (const k of Array.isArray(keys) ? keys : [keys]) delete data[k]; }
   }, session: { setAccessLevel: async () => {}, get: async keys => Object.fromEntries((Array.isArray(keys)?keys:[keys]).map(k=>[k,transient[k]])), set: async values => Object.assign(transient,values), remove: async keys => {for(const k of Array.isArray(keys)?keys:[keys])delete transient[k];} } } };
-  const context = vm.createContext({ chrome, fetch: responder, URL, AbortSignal, console, Date, Promise });
+  const context = vm.createContext({ chrome, fetch: responder, URL, AbortSignal, console, Date, Promise, setTimeout });
   context.importScripts = (...paths) => paths.forEach(p => vm.runInContext(fs.readFileSync(p, 'utf8'), context));
   vm.runInContext(fs.readFileSync('background.js', 'utf8'), context);
   async function send(message, sender) {
@@ -79,4 +79,10 @@ test('remember me controls persistent versus browser-session token storage', asy
     assert.equal(!!app.data.ownerSession,remember);
     assert.equal(!!app.transient.ownerSession,!remember);
   }
+});
+
+test('provider throttling never reports a successful translation or consumes free usage',async()=>{
+ const app=setup({targetLanguage:'tr'},async()=>Response.json({}, {status:429,headers:{'Retry-After':'60'}}));
+ const result=await app.send({type:'translate',text:'hello'},content);
+ assert.equal(result.ok,false);assert.match(result.error,/service is busy/);assert.equal(app.data.dailyWords,0);
 });

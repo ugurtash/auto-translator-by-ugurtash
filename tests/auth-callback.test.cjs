@@ -1,0 +1,10 @@
+const test=require('node:test');const assert=require('node:assert/strict');const vm=require('node:vm');const fs=require('node:fs');
+async function page(hash,responder){
+ const nodes={};for(const id of ['heading','message','returnHint','resetForm','newPassword','repeatPassword','resetSubmit'])nodes[id]={hidden:true,textContent:'',value:'',addEventListener(type,handler){this[type]=handler;}};
+ let ready;let cleared=false;
+ const context=vm.createContext({URLSearchParams,AbortSignal,location:{hash,pathname:'/auth-complete.html'},history:{replaceState(a,b,path){assert.equal(path,'/auth-complete.html');cleared=true;}},document:{addEventListener(type,handler){ready=handler;},getElementById(id){return nodes[id];}},fetch:async(...args)=>{assert.equal(cleared,true);return responder(...args);}});
+ vm.runInContext(fs.readFileSync('auth-complete.js','utf8'),context);await ready();return nodes;
+}
+test('expired links never expose a password form',async()=>{const nodes=await page('#error=access_denied',async()=>{throw new Error('Unexpected request');});assert.match(nodes.message.textContent,/invalid or expired/);assert.equal(nodes.resetForm.hidden,true);});
+test('recovery form requires server-validated account before accepting a password',async()=>{const nodes=await page('#access_token=test&type=recovery',async()=>Response.json({ok:false},{status:401}));assert.equal(nodes.resetForm.hidden,true);assert.match(nodes.message.textContent,/invalid or expired/);});
+test('successful reset clears password fields and returns user to sign-in',async()=>{let calls=0;const nodes=await page('#access_token=test&type=recovery',async(url,options)=>{calls++;assert.equal(options.headers.Authorization,'Bearer test');return Response.json({ok:true});});assert.equal(nodes.resetForm.hidden,false);nodes.newPassword.value=nodes.repeatPassword.value='example-password';await nodes.resetForm.submit({preventDefault(){}});assert.equal(nodes.resetForm.hidden,true);assert.equal(nodes.newPassword.value,'');assert.equal(nodes.repeatPassword.value,'');assert.match(nodes.message.textContent,/Password updated/);assert.equal(calls,2);});

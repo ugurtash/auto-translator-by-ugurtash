@@ -67,10 +67,19 @@ async function translateText(text, targetLanguage) {
     "&dt=t" +
     "&q=" + encodeURIComponent(text);
 
-  var response = await fetch(url);
-
+  var response = await fetch(url, { signal: AbortSignal.timeout(20000) });
+  if (response.status === 429) {
+    var retryAfter = response.headers.get("Retry-After");
+    var waitSeconds = retryAfter ? Number(retryAfter) : 1;
+    if (!Number.isFinite(waitSeconds) && retryAfter) waitSeconds = (Date.parse(retryAfter) - Date.now()) / 1000;
+    if (Number.isFinite(waitSeconds) && waitSeconds >= 0 && waitSeconds <= 5) {
+      await new Promise(function(resolve) { setTimeout(resolve, Math.max(1000, waitSeconds * 1000)); });
+      response = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    }
+  }
   if (!response.ok) {
-    throw new Error("Translation request failed: " + response.status);
+    if (response.status === 429) throw new Error("Translation service is busy. Please try again shortly.");
+    throw new Error("Translation service could not complete this request. Please try again.");
   }
 
   var data = await response.json();

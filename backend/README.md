@@ -1,6 +1,6 @@
 # Auto-Translator founder access
 
-The Chrome extension keeps the existing free translation path (500 words/day per Chrome installation). Founder translations go through the `owner-access` Supabase Edge Function. Every founder request validates the access token using Supabase Auth's `/user` endpoint, requires a confirmed email, and checks the server's founder identity. Client `premium` flags and user-editable metadata cannot grant founder access.
+The Chrome extension keeps the existing free translation path (500 words/day per Chrome installation). Founder entitlement is verified through the `owner-access` Supabase Edge Function before the extension translates using its original Google connection. The cloud translation proxy is retained for future provider integration but is not used by the extension. Every founder request validates the access token using Supabase Auth's `/user` endpoint, requires a confirmed email, and checks the server's founder identity. Client `premium` flags and user-editable metadata cannot grant founder access.
 
 This change implements founder access only. Commercial entitlement synchronization and server-enforced quotas for all free/paid users are still separate work; the Lemon Squeezy webhook scaffold is not a completed subscription system.
 
@@ -14,9 +14,9 @@ The same handlers can be used in a Node/Vercel backend with `SUPABASE_URL`, `SUP
 
 ## First use / another computer
 
-Reload the unpacked extension in Chrome. Right-click the extension icon and choose Options. In the account settings page, enter the account email and a password of at least 12 characters, and click **Create account**. Confirm the email using Supabase's link, then return to account settings and click **Sign in**. The project's Site URL points to `/owner-access/confirmed`, a minimal text response that asks the user to return to extension sign-in. It includes no scripts or tracking.
+Reload the unpacked extension in Chrome. Right-click the extension icon and choose Options. In the account settings page, enter the account email and a password of at least 12 characters, and click **Create account**. Confirm the email using Supabase's link, then return to account settings and click **Sign in**. The project Site URL points to the GitHub Pages `auth-complete.html` callback. It removes credential fragments immediately, validates the account before displaying confirmation or a password reset form, keeps the access token only in memory, and uses no third-party scripts or analytics.
 
-On another computer, install the updated extension and sign in to the same account. Refresh tokens persist in trusted extension storage only; content scripts cannot access them. The password is sent through HTTPS to Supabase Auth and is not saved by the extension. Sign-out removes local tokens and attempts to revoke the current refresh-token session; issued access tokens can remain valid until expiry.
+On another computer, install the updated extension and sign in to the same account. With Remember me selected, refresh tokens persist in trusted local extension storage. Otherwise they are kept only in browser-session storage; content scripts cannot access them. The password is sent through HTTPS to Supabase Auth and is not saved by the extension. Sign-out removes local tokens and attempts to revoke the current refresh-token session; issued access tokens can remain valid until expiry.
 
 Founder access removes the extension's daily word quota, not the upstream translation service's limits. Translation currently uses the same Google endpoint as the prior release; per-request text is limited to 12,000 characters and requests time out. No provider availability or unlimited commercial API entitlement is implied.
 
