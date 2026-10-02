@@ -3,6 +3,12 @@ document.addEventListener("DOMContentLoaded", function() {
   var usage = document.getElementById("usage");
   var saved = document.getElementById("saved");
   var translationEnabled = document.getElementById("translationEnabled");
+  var accountButton = document.getElementById("accountButton");
+  accountButton.addEventListener("click", function() {
+    chrome.runtime.openOptionsPage(function() {
+      if (chrome.runtime.lastError && saved) saved.textContent = "Could not open account settings. Please try again.";
+    });
+  });
 
   function getToday() {
     var now = new Date();
@@ -19,6 +25,8 @@ document.addEventListener("DOMContentLoaded", function() {
         usage.textContent = "Account check unavailable. Reopen to retry.";
         return;
       }
+      accountButton.textContent = account && account.signedIn ? "Account" : "Sign in";
+      document.getElementById("upgrade").hidden = !!(account && account.unlimited);
       if (account && account.unlimited) {
         usage.textContent = "Today: Unlimited";
         return;

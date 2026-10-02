@@ -19,13 +19,14 @@
   <main class="account">
     <p class="brand">AUTO-TRANSLATOR</p>
     <h1>Account</h1>
-    <p class="intro">Manage your sign-in.</p>
+    <p class="intro">Sign in with your email and password.</p>
     <div id="accountStatus" role="status">Checking your account…</div>
     <form id="accountForm" hidden>
       <label for="accountEmail">Email</label>
       <input id="accountEmail" type="email" autocomplete="email" required>
       <label for="accountPassword">Password</label>
       <input id="accountPassword" type="password" autocomplete="current-password" minlength="12" maxlength="128" required>
+      <p class="intro" style="font-size:12px;margin-top:12px">New here? Create an account and confirm your email before signing in.</p>
       <div class="actions">
         <button id="accountLogin" type="submit">Sign in</button>
         <button id="accountRegister" type="button">Create account</button>

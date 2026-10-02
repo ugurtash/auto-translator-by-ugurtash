@@ -24,3 +24,9 @@ Important: payment and server-side entitlement are not yet connected. The curren
 - Removed the account form and all founder labels from the translation popup.
 - Moved account sign-in to the Chrome extension Options page.
 - Unlimited access is identified server-side and shown with a standard usage label.
+
+## 1.2.4 — Sign-in entry point
+
+- Added a discreet Sign in button at the bottom right of the translation popup.
+- The button opens the existing email/password account page and becomes Account after sign-in.
+- The upgrade button is hidden for verified unlimited access.
