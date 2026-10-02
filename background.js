@@ -1,3 +1,5 @@
+importScripts("account-config.js", "account-worker.js");
+
 function getToday() {
   var now = new Date();
   return now.getFullYear() + "-" +
@@ -46,13 +48,13 @@ async function getUsage() {
 
     return {
       words: 0,
-      premium: !!data.premium
+      premium: false
     };
   }
 
   return {
     words: Number(data.dailyWords || 0),
-    premium: !!data.premium
+    premium: false
   };
 }
 
@@ -100,6 +102,12 @@ async function translateText(text, targetLanguage) {
 }
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+  if (message && message.type === "translation-settings") {
+    getStorage(["translationEnabled"]).then(function(data) {
+      sendResponse({ translationEnabled: data.translationEnabled !== false });
+    });
+    return true;
+  }
   if (!message || message.type !== "translate") {
     return;
   }
@@ -121,6 +129,12 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
           code: "NO_TARGET_LANGUAGE",
           error: "Please choose a target language first."
         });
+        return;
+      }
+
+      var ownerResult = await ownerTranslate(text, targetLanguage);
+      if (ownerResult) {
+        sendResponse(ownerResult);
         return;
       }
 

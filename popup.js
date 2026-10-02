@@ -14,30 +14,20 @@ document.addEventListener("DOMContentLoaded", function() {
   function updateUsage() {
     if (!usage) return;
 
-    chrome.storage.local.get(
-      ["usageDate", "dailyWords", "premium"],
-      function(data) {
-        var today = getToday();
-
-        if (data.usageDate !== today) {
-          chrome.storage.local.set({
-            usageDate: today,
-            dailyWords: 0
-          }, function() {
-            usage.textContent = "Today: 0 / 500 words";
-          });
-          return;
-        }
-
-        var words = Number(data.dailyWords || 0);
-
-        if (data.premium) {
-          usage.textContent = "Today: Unlimited";
-        } else {
-          usage.textContent = "Today: " + words + " / 500 words";
-        }
+    chrome.runtime.sendMessage({ type: "owner-status" }, function(account) {
+      if (chrome.runtime.lastError || (account && !account.ok)) {
+        usage.textContent = "Account check unavailable. Reopen to retry.";
+        return;
       }
-    );
+      if (account && account.unlimited) {
+        usage.textContent = "Founder account: Unlimited";
+        return;
+      }
+      chrome.storage.local.get(["usageDate", "dailyWords"], function(data) {
+        var words = data.usageDate === today ? Number(data.dailyWords || 0) : 0;
+        usage.textContent = "Today: " + words + " / 500 words";
+      });
+    });
   }
 
   chrome.storage.local.get(

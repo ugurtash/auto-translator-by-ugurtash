@@ -1,53 +1,23 @@
-import crypto from "node:crypto";
-
-const FREE_DAILY_LIMIT = 500;
-
-function countWords(text) {
-  return text.trim().split(/\s+/).filter(Boolean).length;
-}
-
-function json(res, status, body) {
-  res.status(status).json(body);
-}
-
+import { ApiError, requireOwner, prepare, fail } from '../lib/owner.js';
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return json(res, 405, { ok: false, error: "Method not allowed." });
-  }
-
+  prepare(res);
+  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed.' });
   try {
-    const body = req.body || {};
-    const text = String(body.text || "").trim();
-    const targetLanguage = String(body.targetLanguage || "").trim();
-
-    if (!text || !targetLanguage) {
-      return json(res, 400, {
-        ok: false,
-        error: "text and targetLanguage are required."
-      });
+    await requireOwner(req);
+    const { text, targetLanguage } = req.body || {};
+    if (typeof text !== 'string' || !text.trim() || typeof targetLanguage !== 'string' || !/^[a-z]{2,3}(?:-[A-Za-z]{2,4})?$/.test(targetLanguage)) {
+      throw new ApiError(400, 'INVALID_INPUT', 'Text and a valid target language are required.');
     }
-
-    const words = countWords(text);
-
-    if (words > FREE_DAILY_LIMIT) {
-      return json(res, 400, {
-        ok: false,
-        code: "REQUEST_TOO_LARGE"
-      });
-    }
-
-    const requestId = crypto.randomUUID();
-
-    return json(res, 501, {
-      ok: false,
-      code: "BACKEND_NOT_CONFIGURED",
-      requestId,
-      message: "Authentication, database, entitlement and translation provider configuration is required."
-    });
-  } catch (error) {
-    return json(res, 500, {
-      ok: false,
-      code: "SERVER_ERROR"
-    });
-  }
+    // A transport safeguard, not a daily word quota.
+    if (text.length > 12000) throw new ApiError(413, 'REQUEST_TOO_LARGE', 'Select a shorter passage (up to 12,000 characters).');
+    const url = new URL('https://translate.googleapis.com/translate_a/single');
+    url.search = new URLSearchParams({ client: 'gtx', sl: 'auto', tl: targetLanguage, dt: 't', q: text }).toString();
+    const response = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!response.ok) throw new ApiError(502, 'TRANSLATION_ERROR', 'Translation service temporarily unavailable.');
+    const data = await response.json();
+    if (!Array.isArray(data?.[0])) throw new ApiError(502, 'TRANSLATION_ERROR', 'Invalid translation response.');
+    const translation = data[0].map(item => item?.[0] || '').join('');
+    if (!translation) throw new ApiError(502, 'TRANSLATION_ERROR', 'Empty translation response.');
+    return res.status(200).json({ ok: true, translation, sourceLanguage: typeof data[2] === 'string' ? data[2] : '', targetLanguage, premium: true, plan: 'owner', limit: null });
+  } catch (error) { return fail(res, error); }
 }

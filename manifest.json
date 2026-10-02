@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Auto-Translator by UgurTash",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Translate selected text instantly while browsing.",
   "permissions": [
     "storage"
   ],
   "host_permissions": [
-    "https://translate.googleapis.com/*"
+    "https://translate.googleapis.com/*",
+    "https://cxxbcamghmyttgqikfak.supabase.co/*"
   ],
   "background": {
     "service_worker": "background.js"

@@ -275,7 +275,8 @@
 
     var position = getSelectionPosition();
 
-    chrome.storage.local.get(["translationEnabled"], function(data) {
+    chrome.runtime.sendMessage({ type: "translation-settings" }, function(data) {
+      if (chrome.runtime.lastError || !data) return;
       if (data.translationEnabled === false) {
         return;
       }
