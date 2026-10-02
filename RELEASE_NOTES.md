@@ -38,3 +38,8 @@ Important: payment and server-side entitlement are not yet connected. The curren
 - Remember me persists session tokens only; unchecked sessions are kept in browser-session storage.
 - Successful sign-in returns to the previously active tab and reopens translation controls where supported.
 - Founder entitlement is checked on the server; translation uses the extension's original provider connection to avoid failures from the cloud proxy.
+
+## 1.2.6 — Close sign-in tab after returning
+
+- After successful sign-in, return to the original tab and close only the extension account tab.
+- Keep account settings open if the original tab has been closed.

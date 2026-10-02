@@ -76,7 +76,7 @@ async function ownerTranslate(text, targetLanguage) {
   var result = await translateText(text, targetLanguage);
   return { ok: true, ...result, targetLanguage, premium: true, plan: account.plan, limit: null };
 }
-async function handleOwnerMessage(message) {
+async function handleOwnerMessage(message, sender) {
   if (message.type === 'owner-status') return ownerAccountStatus();
   if (message.type === 'owner-login' || message.type === 'owner-register') {
     var epoch = ++ownerSessionEpoch;
@@ -91,14 +91,26 @@ async function handleOwnerMessage(message) {
   if (message.type === 'owner-forgot-password') return ownerFetch('auth', { action: 'forgot-password', email: message.email });
   if (message.type === 'owner-return-to-page') {
     var data = await chrome.storage.session.get('accountReturnPage');
+    var returned = false;
     if (data.accountReturnPage) {
       try {
         await chrome.tabs.update(data.accountReturnPage.tabId, { active: true });
-        await chrome.windows.update(data.accountReturnPage.windowId, { focused: true });
-      } catch { /* The original tab may have been closed. The account page remains usable. */ }
+        returned = true;
+        try { await chrome.windows.update(data.accountReturnPage.windowId, { focused: true }); } catch {}
+      } catch { /* Keep account settings open if the original tab no longer exists. */ }
+    }
+    if (returned) {
+      var accountTabId = sender.tab ? sender.tab.id : message.accountTabId;
+      if (Number.isInteger(accountTabId) && accountTabId !== data.accountReturnPage.tabId) {
+        try {
+          var accountTab = await chrome.tabs.get(accountTabId);
+          if (accountTab.url === chrome.runtime.getURL('account.html')) await chrome.tabs.remove(accountTabId);
+        } catch { /* The account tab may already have been closed. */ }
+      }
+      await chrome.storage.session.remove('accountReturnPage');
     }
     if (chrome.action.openPopup) {
-      try { await chrome.action.openPopup(); } catch { /* Older Chrome versions can reject programmatic popup opening. */ }
+      try { await chrome.action.openPopup(); } catch {}
     }
     return { ok: true };
   }
@@ -121,6 +133,6 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   if (sender.url === chrome.runtime.getURL('popup.html') && message.type !== 'owner-status') {
     sendResponse({ ok: false, error: 'Open account settings to sign in.' }); return;
   }
-  handleOwnerMessage(message).then(sendResponse, function(error) { sendResponse({ ok: false, error: error.message, code: error.code }); });
+  handleOwnerMessage(message, sender).then(sendResponse, function(error) { sendResponse({ ok: false, error: error.message, code: error.code }); });
   return true;
 });

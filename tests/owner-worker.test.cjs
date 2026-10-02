@@ -86,3 +86,17 @@ test('provider throttling never reports a successful translation or consumes fre
  const result=await app.send({type:'translate',text:'hello'},content);
  assert.equal(result.ok,false);assert.match(result.error,/service is busy/);assert.equal(app.data.dailyWords,0);
 });
+
+test('returning to translation closes only the verified account tab',async()=>{
+ const app=setup();app.transient.accountReturnPage={tabId:1,windowId:3};const calls=[];
+ app.context.chrome.tabs={update:async id=>calls.push(['activate',id]),get:async id=>({id,url:'chrome-extension://extension-id/account.html'}),remove:async id=>calls.push(['close',id])};
+ app.context.chrome.windows={update:async()=>{}};app.context.chrome.action={openPopup:async()=>{}};
+ await app.send({type:'owner-return-to-page',accountTabId:2},settings);
+ assert.deepEqual(calls,[['activate',1],['close',2]]);
+});
+test('missing original tab keeps the account tab open',async()=>{
+ const app=setup();app.transient.accountReturnPage={tabId:1,windowId:3};let closed=false;
+ app.context.chrome.tabs={update:async()=>{throw new Error('Missing tab');},remove:async()=>{closed=true;}};
+ app.context.chrome.action={};
+ await app.send({type:'owner-return-to-page',accountTabId:2},settings);assert.equal(closed,false);
+});

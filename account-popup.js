@@ -12,6 +12,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!result?.ok) throw new Error(result?.code === 'OWNER_REQUIRED' ? 'This account does not have access.' : result?.error || 'Account service unavailable.');
     return result;
   }
+  async function returnToTranslation() {
+    var current = await chrome.tabs.getCurrent();
+    return request({ type: 'owner-return-to-page', accountTabId: current && current.id });
+  }
   async function refresh() {
     var account = await request({ type: 'owner-status' });
     form.hidden = !account.configured || account.signedIn;
@@ -40,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       await refresh();
       notice.textContent = 'Signed in successfully. You can continue translating.';
-      await request({ type: 'owner-return-to-page' });
+      await returnToTranslation();
     });
   }
   document.getElementById('forgotPassword').addEventListener('click', function() {
@@ -50,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
       notice.textContent = 'If this email has an account, a password reset link has been sent. Check your inbox and spam folder.';
     });
   });
-  continueButton.addEventListener('click', function() { run(async function() { await request({ type: 'owner-return-to-page' }); notice.textContent = 'Open Auto-Translator from the toolbar to continue.'; }); });
+  continueButton.addEventListener('click', function() { run(async function() { await returnToTranslation(); notice.textContent = 'Open Auto-Translator from the toolbar to continue.'; }); });
   document.getElementById('accountRegister').addEventListener('click', function() { authenticate('owner-register'); });
   form.addEventListener('submit', function(event) { event.preventDefault(); authenticate('owner-login'); });
   signOut.addEventListener('click', function() {
