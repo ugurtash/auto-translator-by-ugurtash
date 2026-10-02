@@ -8,7 +8,7 @@ Deploy `backend/edge/index.ts` and its relative dependencies as `owner-access`. 
 
 Apply `schema.sql`, then `billing-schema.sql`. Billing tables use RLS; clients can read only their own subscription and cannot write it. Only the service role can run the atomic, idempotent subscription update. Delayed webhook events fetch the provider's current state. A cancelled subscription remains accessible until its paid period ends. Paused, expired, unpaid and fully refunded subscriptions do not grant access.
 
-Default Supabase function secrets provide Auth and service-role credentials. Privately configure `OWNER_USER_ID` or inject it into deployment-config.js in the upload bundle only. Never commit founder identity or secret keys. Live billing requires `LEMON_SQUEEZY_API_KEY`, `LEMON_SQUEEZY_WEBHOOK_SECRET`, `LEMON_SQUEEZY_STORE_ID`, `LEMON_SQUEEZY_VARIANT_ID`. The variant must be the verified €3.99 monthly live product.
+Default Supabase function secrets provide Auth and service-role credentials. Privately configure `OWNER_USER_ID` or inject it into deployment-config.js in the upload bundle only. Never commit founder identity or secret keys. Live billing requires `LEMON_SQUEEZY_API_KEY`, `LEMON_SQUEEZY_WEBHOOK_SECRET`, `LEMON_SQUEEZY_STORE_ID`, `LEMON_SQUEEZY_VARIANT_ID`. The variant must be the verified $3.99 monthly live product.
 
 The isolated `owner-access-test` bundle sets `BILLING_TEST_MODE=true` in its private deployment-config.js and uses `LEMON_SQUEEZY_TEST_*` settings. Do not switch the production extension URL to the test function. Test checkout purchases use provider test cards only. API keys and webhook secrets stay in encrypted server settings; they are absent from the Chrome package.
 

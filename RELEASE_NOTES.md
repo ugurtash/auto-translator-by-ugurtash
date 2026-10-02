@@ -52,3 +52,7 @@ Important: payment and server-side entitlement are not yet connected. The curren
 - Checkout opens from account settings; access can be refreshed after purchase. Updated privacy description.
 - Verified SMTP email delivery, normal customer confirmation/login, session refresh and a successful test purchase linked through the signed webhook. Test purchases do not grant production access.
 - 40 automated checks pass. Live billing is configured; the live product remains Draft until launch. Chrome Web Store screenshots and dashboard review remain before submission.
+
+## 1.2.8 — USD pricing
+- Premium starts at USD 3.99 per month, plus applicable checkout taxes. Updated extension, landing page and listing copy.
+- Lemon Squeezy live product is published; Chrome Web Store submission remains pending.
